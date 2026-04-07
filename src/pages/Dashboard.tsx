@@ -1,53 +1,73 @@
-import { todayBookings, timeSlots, horses, pricePerCredit, waitlist } from "@/data/mock-data";
+import { todayBookings, timeSlots, horses, waitlist } from "@/data/mock-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarCheck, AlertTriangle, TrendingDown, Clock } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { CalendarCheck, Users, Lightbulb, Clock } from "lucide-react";
 
 const StatCard = ({
   label,
   value,
   sub,
   icon: Icon,
-  variant = "default",
 }: {
   label: string;
   value: string | number;
   sub?: string;
   icon: React.ElementType;
-  variant?: "default" | "warning" | "success";
-}) => {
-  const variantClasses = {
-    default: "border-border",
-    warning: "border-destructive/20 bg-destructive/5",
-    success: "border-success/20 bg-success/5",
-  };
-
-  return (
-    <Card className={`${variantClasses[variant]} animate-fade-in`}>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {label}
-            </p>
-            <p className="text-2xl font-semibold mt-1 text-foreground">{value}</p>
-            {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-          </div>
-          <div className="p-2 rounded-lg bg-muted">
-            <Icon className="h-4 w-4 text-muted-foreground" />
-          </div>
+}) => (
+  <Card className="animate-fade-in">
+    <CardContent className="p-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {label}
+          </p>
+          <p className="text-2xl font-semibold mt-1 text-foreground">{value}</p>
+          {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
         </div>
-      </CardContent>
-    </Card>
-  );
-};
+        <div className="p-2 rounded-lg bg-muted">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export default function Dashboard() {
-  const totalSlots = timeSlots.length * horses.filter((h) => h.available).length;
+  const availableHorses = horses.filter((h) => h.available);
+  const totalSlots = timeSlots.length * availableHorses.length;
   const bookedSlots = todayBookings.filter((b) => b.status !== "cancelada").length;
   const emptySlots = totalSlots - bookedSlots;
-  const lostRevenue = emptySlots * pricePerCredit;
-  const paidCount = todayBookings.filter((b) => b.paid).length;
+  const occupancyPct = Math.round((bookedSlots / totalSlots) * 100);
+
+  // Horse utilization
+  const horseUsage = availableHorses.map((horse) => {
+    const used = todayBookings.filter(
+      (b) => b.horseId === horse.id && b.status !== "cancelada"
+    ).length;
+    return { ...horse, used, total: timeSlots.length };
+  });
+
+  // Smart suggestions
+  const suggestions: string[] = [];
+  if (waitlist.length > 0 && emptySlots > 0) {
+    suggestions.push(
+      `Hay ${waitlist.length} alumno${waitlist.length > 1 ? "s" : ""} en lista de espera que podrían ocupar huecos libres`
+    );
+  }
+  const underusedHorses = horseUsage.filter((h) => h.used === 0);
+  if (underusedHorses.length > 0) {
+    suggestions.push(
+      `${underusedHorses.map((h) => h.name).join(", ")} no tiene${underusedHorses.length > 1 ? "n" : ""} clases hoy — podrías reorganizar horarios`
+    );
+  }
+  const busiestSlot = timeSlots.reduce((best, time) => {
+    const count = todayBookings.filter((b) => b.time === time && b.status !== "cancelada").length;
+    return count > best.count ? { time, count } : best;
+  }, { time: "", count: 0 });
+  if (busiestSlot.count > 0) {
+    suggestions.push(`El horario de las ${busiestSlot.time} suele llenarse rápido`);
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -58,36 +78,93 @@ export default function Dashboard() {
         </p>
       </div>
 
+      {/* Hero summary */}
+      <Card className="border-primary/15 bg-primary/3">
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="text-lg font-display text-foreground">
+                Hoy tienes {emptySlots} {emptySlots === 1 ? "hueco" : "huecos"} sin cubrir
+              </p>
+              {waitlist.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {waitlist.length} alumno{waitlist.length > 1 ? "s" : ""} en lista de espera podrían ocuparlos
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Ocupación</p>
+                <p className="text-2xl font-semibold text-foreground">{occupancyPct}%</p>
+              </div>
+              <Progress value={occupancyPct} className="w-24 h-2" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
-          label="Reservas hoy"
+          label="Clases reservadas"
           value={bookedSlots}
-          sub={`de ${totalSlots} posibles`}
+          sub={`de ${totalSlots} disponibles`}
           icon={CalendarCheck}
-          variant="success"
         />
         <StatCard
-          label="Huecos vacíos"
+          label="Huecos sin cubrir"
           value={emptySlots}
-          sub="sin ocupar"
-          icon={AlertTriangle}
-          variant="warning"
-        />
-        <StatCard
-          label="Ingresos perdidos"
-          value={`${lostRevenue}€`}
-          sub="estimado hoy"
-          icon={TrendingDown}
-          variant="warning"
+          sub="disponibilidad no aprovechada"
+          icon={Clock}
         />
         <StatCard
           label="Lista de espera"
           value={waitlist.length}
-          sub="alumnos esperando"
-          icon={Clock}
+          sub="alumnos esperando hueco"
+          icon={Users}
         />
       </div>
+
+      {/* Horse utilization */}
+      <div>
+        <h2 className="text-xl text-foreground mb-4">Uso de caballos hoy</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {horseUsage.map((horse) => {
+            const pct = Math.round((horse.used / horse.total) * 100);
+            return (
+              <Card key={horse.id} className="animate-fade-in">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">{horse.image}</span>
+                    <span className="font-medium text-sm text-foreground">{horse.name}</span>
+                  </div>
+                  <Progress value={pct} className="h-1.5 mb-1.5" />
+                  <p className="text-xs text-muted-foreground">
+                    {horse.used}/{horse.total} horas ocupadas
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Smart suggestions */}
+      {suggestions.length > 0 && (
+        <div>
+          <h2 className="text-xl text-foreground mb-4">Sugerencias</h2>
+          <div className="space-y-2">
+            {suggestions.map((s, i) => (
+              <Card key={i} className="border-dashed border-accent/30 bg-accent/5 animate-fade-in">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <Lightbulb className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+                  <p className="text-sm text-foreground">{s}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Timeline */}
       <div>
@@ -99,8 +176,8 @@ export default function Dashboard() {
                 const slotBookings = todayBookings.filter(
                   (b) => b.time === time && b.status !== "cancelada"
                 );
-                const availableHorses = horses.filter((h) => h.available);
                 const emptyInSlot = availableHorses.length - slotBookings.length;
+                const waitlistForSlot = waitlist.filter((w) => w.time === time);
 
                 return (
                   <div key={time} className="flex items-stretch">
@@ -116,17 +193,13 @@ export default function Dashboard() {
                       {slotBookings.map((booking) => (
                         <div
                           key={booking.id}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border ${
-                            booking.paid
-                              ? "border-success/30 bg-success/8 text-foreground"
-                              : "border-destructive/30 bg-destructive/8 text-foreground"
-                          }`}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-primary/20 bg-primary/5 text-foreground"
                         >
                           <span className="font-medium">{booking.studentName}</span>
                           <span className="text-muted-foreground">·</span>
                           <span className="text-muted-foreground">{booking.horseName}</span>
                           <Badge
-                            variant={booking.paid ? "default" : "destructive"}
+                            variant={booking.paid ? "default" : "secondary"}
                             className="text-[10px] h-5"
                           >
                             {booking.paid ? "Pagado" : "Pendiente"}
@@ -134,11 +207,15 @@ export default function Dashboard() {
                         </div>
                       ))}
 
-                      {/* Empty slots */}
+                      {/* Empty slots - calm tone */}
                       {emptyInSlot > 0 && (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-warning/40 bg-warning/5 text-xs text-warning-foreground">
-                          <AlertTriangle className="h-3 w-3 text-warning" />
-                          {emptyInSlot} {emptyInSlot === 1 ? "hueco" : "huecos"} — {emptyInSlot * pricePerCredit}€ sin facturar
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-muted-foreground/20 bg-muted/30 text-xs text-muted-foreground">
+                          {emptyInSlot} {emptyInSlot === 1 ? "hueco disponible" : "huecos disponibles"}
+                          {waitlistForSlot.length > 0 && (
+                            <Badge variant="secondary" className="text-[10px] h-5 ml-1">
+                              {waitlistForSlot.length} en espera
+                            </Badge>
+                          )}
                         </div>
                       )}
 

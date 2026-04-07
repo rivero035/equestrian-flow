@@ -4,8 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { User, CreditCard, History } from "lucide-react";
+import { User, History } from "lucide-react";
 
 export default function Students() {
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
@@ -39,22 +38,15 @@ export default function Students() {
                     <p className="text-xs text-muted-foreground">{s.phone}</p>
                   </div>
                 </div>
-                <Badge variant={s.credits > 0 ? "default" : "destructive"}>
-                  {s.credits} créditos
+                <Badge variant={s.credits > 0 ? "default" : "secondary"}>
+                  {s.credits} clases disponibles
                 </Badge>
-              </div>
-              <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <CreditCard className="h-3 w-3" />
-                  {s.totalSpent}€ total
-                </span>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Student detail dialog */}
       <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
         <DialogContent>
           <DialogHeader>
@@ -63,15 +55,9 @@ export default function Students() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 rounded-lg bg-muted">
-                <p className="text-xs text-muted-foreground">Créditos</p>
-                <p className="text-xl font-semibold text-foreground">{student?.credits}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-muted">
-                <p className="text-xs text-muted-foreground">Total pagado</p>
-                <p className="text-xl font-semibold text-foreground">{student?.totalSpent}€</p>
-              </div>
+            <div className="p-3 rounded-lg bg-muted">
+              <p className="text-xs text-muted-foreground">Clases disponibles</p>
+              <p className="text-xl font-semibold text-foreground">{student?.credits}</p>
             </div>
 
             <div>
@@ -83,7 +69,7 @@ export default function Students() {
                   {studentBookings.map((b) => (
                     <div key={b.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/50">
                       <span className="text-foreground">{b.time} · {b.horseName}</span>
-                      <Badge variant={b.paid ? "default" : "destructive"} className="text-[10px]">
+                      <Badge variant={b.paid ? "default" : "secondary"} className="text-[10px]">
                         {b.paid ? "Pagado" : "Pendiente"}
                       </Badge>
                     </div>

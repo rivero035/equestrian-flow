@@ -1,6 +1,7 @@
 import { horses, todayBookings, timeSlots } from "@/data/mock-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 export default function Horses() {
   return (
@@ -16,6 +17,7 @@ export default function Horses() {
             (b) => b.horseId === horse.id && b.status !== "cancelada"
           );
           const freeSlots = timeSlots.length - bookingsToday.length;
+          const usagePct = Math.round((bookingsToday.length / timeSlots.length) * 100);
 
           return (
             <Card key={horse.id} className="animate-fade-in">
@@ -30,16 +32,22 @@ export default function Horses() {
                       </Badge>
                     </div>
                   </div>
-                  <Badge variant={horse.available ? "default" : "destructive"}>
+                  <Badge variant={horse.available ? "default" : "secondary"}>
                     {horse.available ? "Activo" : "Descanso"}
                   </Badge>
                 </div>
 
                 {horse.available && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                      Horario de hoy
-                    </p>
+                  <div className="mt-4 space-y-3">
+                    {/* Utilization bar */}
+                    <div>
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>Ocupación hoy</span>
+                        <span>{bookingsToday.length}/{timeSlots.length} horas</span>
+                      </div>
+                      <Progress value={usagePct} className="h-1.5" />
+                    </div>
+
                     <div className="flex flex-wrap gap-1.5">
                       {timeSlots.map((time) => {
                         const booked = bookingsToday.find((b) => b.time === time);
@@ -57,8 +65,8 @@ export default function Horses() {
                         );
                       })}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {freeSlots} {freeSlots === 1 ? "hueco libre" : "huecos libres"} hoy
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {freeSlots} {freeSlots === 1 ? "hueco disponible" : "huecos disponibles"}
                     </p>
                   </div>
                 )}

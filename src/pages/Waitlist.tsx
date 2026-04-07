@@ -1,4 +1,4 @@
-import { waitlist, timeSlots } from "@/data/mock-data";
+import { waitlist } from "@/data/mock-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ export default function Waitlist() {
       <div>
         <h1 className="text-3xl text-foreground">Lista de Espera</h1>
         <p className="text-muted-foreground mt-1">
-          Alumnos que esperan un hueco libre — reasignación rápida
+          Alumnos que esperan un hueco — reasignación rápida
         </p>
       </div>
 
@@ -28,13 +28,13 @@ export default function Waitlist() {
             <Card key={entry.id} className="animate-fade-in">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-8 h-8 rounded-full bg-warning/10 flex items-center justify-center">
-                    <span className="text-sm font-semibold text-warning">{entry.position}</span>
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-sm font-semibold text-primary">{entry.position}</span>
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{entry.studentName}</p>
                     <p className="text-xs text-muted-foreground">
-                      Esperando para {entry.date} a las {entry.time}
+                      Esperando hueco el {entry.date} a las {entry.time}
                     </p>
                   </div>
                 </div>

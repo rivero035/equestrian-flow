@@ -1,8 +1,12 @@
-import { todayBookings, timeSlots, horses, waitlist } from "@/data/mock-data";
+import { useHorses } from "@/hooks/use-horses";
+import { useBookingsByDate } from "@/hooks/use-bookings";
+import { useWaitlist } from "@/hooks/use-waitlist";
+import { timeSlots } from "@/data/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CalendarCheck, Users, Lightbulb, Clock } from "lucide-react";
+import { CalendarCheck, Users, Lightbulb, Clock, Loader2 } from "lucide-react";
+import { format } from "date-fns";
 
 const StatCard = ({
   label,
@@ -34,25 +38,36 @@ const StatCard = ({
 );
 
 export default function Dashboard() {
+  const today = format(new Date(), "yyyy-MM-dd");
+  const { data: horses = [], isLoading: loadingHorses } = useHorses();
+  const { data: bookings = [], isLoading: loadingBookings } = useBookingsByDate(today);
+  const { data: waitlistEntries = [], isLoading: loadingWaitlist } = useWaitlist();
+
+  if (loadingHorses || loadingBookings || loadingWaitlist) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   const availableHorses = horses.filter((h) => h.available);
   const totalSlots = timeSlots.length * availableHorses.length;
-  const bookedSlots = todayBookings.filter((b) => b.status !== "cancelada").length;
-  const emptySlots = totalSlots - bookedSlots;
-  const occupancyPct = Math.round((bookedSlots / totalSlots) * 100);
+  const bookedSlots = bookings.length;
+  const emptySlots = Math.max(0, totalSlots - bookedSlots);
+  const occupancyPct = totalSlots > 0 ? Math.round((bookedSlots / totalSlots) * 100) : 0;
 
-  // Horse utilization
+  const todayWaitlist = waitlistEntries.filter((w) => w.date === today);
+
   const horseUsage = availableHorses.map((horse) => {
-    const used = todayBookings.filter(
-      (b) => b.horseId === horse.id && b.status !== "cancelada"
-    ).length;
+    const used = bookings.filter((b) => b.horse_id === horse.id).length;
     return { ...horse, used, total: timeSlots.length };
   });
 
-  // Smart suggestions
   const suggestions: string[] = [];
-  if (waitlist.length > 0 && emptySlots > 0) {
+  if (todayWaitlist.length > 0 && emptySlots > 0) {
     suggestions.push(
-      `Hay ${waitlist.length} alumno${waitlist.length > 1 ? "s" : ""} en lista de espera que podrían ocupar huecos libres`
+      `Hay ${todayWaitlist.length} alumno${todayWaitlist.length > 1 ? "s" : ""} en lista de espera que podrían ocupar huecos libres`
     );
   }
   const underusedHorses = horseUsage.filter((h) => h.used === 0);
@@ -61,34 +76,24 @@ export default function Dashboard() {
       `${underusedHorses.map((h) => h.name).join(", ")} no tiene${underusedHorses.length > 1 ? "n" : ""} clases hoy — podrías reorganizar horarios`
     );
   }
-  const busiestSlot = timeSlots.reduce((best, time) => {
-    const count = todayBookings.filter((b) => b.time === time && b.status !== "cancelada").length;
-    return count > best.count ? { time, count } : best;
-  }, { time: "", count: 0 });
-  if (busiestSlot.count > 0) {
-    suggestions.push(`El horario de las ${busiestSlot.time} suele llenarse rápido`);
-  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl text-foreground">Panel Principal</h1>
-        <p className="text-muted-foreground mt-1">
-          Resumen del día — todo en un vistazo
-        </p>
+        <p className="text-muted-foreground mt-1">Resumen del día — todo en un vistazo</p>
       </div>
 
-      {/* Hero summary */}
-      <Card className="border-primary/15 bg-primary/3">
+      <Card className="border-primary/15 bg-primary/5">
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <p className="text-lg font-display text-foreground">
                 Hoy tienes {emptySlots} {emptySlots === 1 ? "hueco" : "huecos"} sin cubrir
               </p>
-              {waitlist.length > 0 && (
+              {todayWaitlist.length > 0 && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  {waitlist.length} alumno{waitlist.length > 1 ? "s" : ""} en lista de espera podrían ocuparlos
+                  {todayWaitlist.length} alumno{todayWaitlist.length > 1 ? "s" : ""} en lista de espera podrían ocuparlos
                 </p>
               )}
             </div>
@@ -103,29 +108,12 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard
-          label="Clases reservadas"
-          value={bookedSlots}
-          sub={`de ${totalSlots} disponibles`}
-          icon={CalendarCheck}
-        />
-        <StatCard
-          label="Huecos sin cubrir"
-          value={emptySlots}
-          sub="disponibilidad no aprovechada"
-          icon={Clock}
-        />
-        <StatCard
-          label="Lista de espera"
-          value={waitlist.length}
-          sub="alumnos esperando hueco"
-          icon={Users}
-        />
+        <StatCard label="Clases reservadas" value={bookedSlots} sub={`de ${totalSlots} disponibles`} icon={CalendarCheck} />
+        <StatCard label="Huecos sin cubrir" value={emptySlots} sub="disponibilidad no aprovechada" icon={Clock} />
+        <StatCard label="Lista de espera" value={todayWaitlist.length} sub="alumnos esperando hueco" icon={Users} />
       </div>
 
-      {/* Horse utilization */}
       <div>
         <h2 className="text-xl text-foreground mb-4">Uso de caballos hoy</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -139,9 +127,7 @@ export default function Dashboard() {
                     <span className="font-medium text-sm text-foreground">{horse.name}</span>
                   </div>
                   <Progress value={pct} className="h-1.5 mb-1.5" />
-                  <p className="text-xs text-muted-foreground">
-                    {horse.used}/{horse.total} horas ocupadas
-                  </p>
+                  <p className="text-xs text-muted-foreground">{horse.used}/{horse.total} horas ocupadas</p>
                 </CardContent>
               </Card>
             );
@@ -149,7 +135,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Smart suggestions */}
       {suggestions.length > 0 && (
         <div>
           <h2 className="text-xl text-foreground mb-4">Sugerencias</h2>
@@ -166,48 +151,32 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Timeline */}
       <div>
         <h2 className="text-xl text-foreground mb-4">Horario del día</h2>
         <Card>
           <CardContent className="p-0">
             <div className="divide-y divide-border">
               {timeSlots.map((time) => {
-                const slotBookings = todayBookings.filter(
-                  (b) => b.time === time && b.status !== "cancelada"
-                );
+                const slotBookings = bookings.filter((b) => b.time === time);
                 const emptyInSlot = availableHorses.length - slotBookings.length;
-                const waitlistForSlot = waitlist.filter((w) => w.time === time);
+                const waitlistForSlot = todayWaitlist.filter((w) => w.time === time);
 
                 return (
                   <div key={time} className="flex items-stretch">
-                    {/* Time label */}
                     <div className="w-20 shrink-0 flex items-center justify-center border-r border-border bg-muted/40">
-                      <span className="text-sm font-medium text-muted-foreground">
-                        {time}
-                      </span>
+                      <span className="text-sm font-medium text-muted-foreground">{time}</span>
                     </div>
-
-                    {/* Bookings */}
                     <div className="flex-1 p-3 flex flex-wrap gap-2 min-h-[56px]">
                       {slotBookings.map((booking) => (
-                        <div
-                          key={booking.id}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-primary/20 bg-primary/5 text-foreground"
-                        >
-                          <span className="font-medium">{booking.studentName}</span>
+                        <div key={booking.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-primary/20 bg-primary/5 text-foreground">
+                          <span className="font-medium">{booking.students?.name}</span>
                           <span className="text-muted-foreground">·</span>
-                          <span className="text-muted-foreground">{booking.horseName}</span>
-                          <Badge
-                            variant={booking.paid ? "default" : "secondary"}
-                            className="text-[10px] h-5"
-                          >
+                          <span className="text-muted-foreground">{booking.horses?.name}</span>
+                          <Badge variant={booking.paid ? "default" : "secondary"} className="text-[10px] h-5">
                             {booking.paid ? "Pagado" : "Pendiente"}
                           </Badge>
                         </div>
                       ))}
-
-                      {/* Empty slots - calm tone */}
                       {emptyInSlot > 0 && (
                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-muted-foreground/20 bg-muted/30 text-xs text-muted-foreground">
                           {emptyInSlot} {emptyInSlot === 1 ? "hueco disponible" : "huecos disponibles"}
@@ -217,10 +186,6 @@ export default function Dashboard() {
                             </Badge>
                           )}
                         </div>
-                      )}
-
-                      {slotBookings.length === 0 && emptyInSlot === 0 && (
-                        <span className="text-xs text-muted-foreground self-center">Sin actividad</span>
                       )}
                     </div>
                   </div>

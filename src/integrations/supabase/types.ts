@@ -14,7 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          created_at: string
+          date: string
+          horse_id: string
+          id: string
+          paid: boolean
+          status: Database["public"]["Enums"]["booking_status"]
+          student_id: string
+          time: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          horse_id: string
+          id?: string
+          paid?: boolean
+          status?: Database["public"]["Enums"]["booking_status"]
+          student_id: string
+          time: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          horse_id?: string
+          id?: string
+          paid?: boolean
+          status?: Database["public"]["Enums"]["booking_status"]
+          student_id?: string
+          time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_horse_id_fkey"
+            columns: ["horse_id"]
+            isOneToOne: false
+            referencedRelation: "horses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      horses: {
+        Row: {
+          available: boolean
+          created_at: string
+          id: string
+          image: string
+          level: Database["public"]["Enums"]["horse_level"]
+          name: string
+        }
+        Insert: {
+          available?: boolean
+          created_at?: string
+          id?: string
+          image?: string
+          level?: Database["public"]["Enums"]["horse_level"]
+          name: string
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          id?: string
+          image?: string
+          level?: Database["public"]["Enums"]["horse_level"]
+          name?: string
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          created_at: string
+          credits: number
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits?: number
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      waitlist: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          position: number
+          student_id: string
+          time: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          position?: number
+          student_id: string
+          time: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          position?: number
+          student_id?: string
+          time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +159,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      booking_status: "confirmada" | "pendiente" | "cancelada"
+      horse_level: "principiante" | "intermedio" | "avanzado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +287,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      booking_status: ["confirmada", "pendiente", "cancelada"],
+      horse_level: ["principiante", "intermedio", "avanzado"],
+    },
   },
 } as const

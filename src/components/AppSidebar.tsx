@@ -8,6 +8,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import equioLogo from "@/assets/equio-logo.png";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Sidebar,
@@ -40,7 +41,7 @@ export function AppSidebar() {
       <SidebarContent className="pt-6 flex flex-col h-full">
         <div className={`px-4 mb-8 ${collapsed ? "px-2" : ""}`}>
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🏇</span>
+            <img src={equioLogo} alt="equio logo" width={32} height={32} />
             {!collapsed && (
               <div>
                 <h1 className="font-display text-lg leading-tight text-foreground">

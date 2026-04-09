@@ -1,4 +1,5 @@
 import { useState } from "react";
+import equioLogo from "@/assets/equio-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,7 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <span className="text-4xl">🏇</span>
+          <img src={equioLogo} alt="equio logo" width={64} height={64} />
           <h1 className="text-2xl font-display mt-3 text-foreground">
             equio
           </h1>

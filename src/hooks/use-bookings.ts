@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 export interface Booking {
@@ -11,18 +12,21 @@ export interface Booking {
   status: "confirmada" | "pendiente" | "cancelada";
   paid: boolean;
   created_at: string;
-  // Joined fields
+  center_id: string | null;
   students?: { name: string };
   horses?: { name: string; image: string };
 }
 
 export function useBookingsByDate(date: string) {
+  const { centerId } = useAuth();
   return useQuery({
-    queryKey: ["bookings", date],
+    queryKey: ["bookings", date, centerId],
+    enabled: !!centerId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
         .select("*, students(name), horses(name, image)")
+        .eq("center_id", centerId!)
         .eq("date", date)
         .neq("status", "cancelada")
         .order("time");
@@ -34,6 +38,7 @@ export function useBookingsByDate(date: string) {
 
 export function useCreateBooking() {
   const qc = useQueryClient();
+  const { centerId } = useAuth();
   return useMutation({
     mutationFn: async (booking: {
       student_id: string;
@@ -41,7 +46,6 @@ export function useCreateBooking() {
       date: string;
       time: string;
     }) => {
-      // Check if horse is already booked
       const { data: existing } = await supabase
         .from("bookings")
         .select("id")
@@ -55,7 +59,6 @@ export function useCreateBooking() {
         throw new Error("Este caballo ya está reservado en ese horario");
       }
 
-      // Check student credits
       const { data: student } = await supabase
         .from("students")
         .select("credits")
@@ -66,15 +69,13 @@ export function useCreateBooking() {
         throw new Error("El alumno no tiene créditos disponibles");
       }
 
-      // Create booking
       const { data, error } = await supabase
         .from("bookings")
-        .insert(booking)
+        .insert({ ...booking, center_id: centerId })
         .select()
         .single();
       if (error) throw error;
 
-      // Deduct 1 credit
       await supabase
         .from("students")
         .update({ credits: student.credits - 1 })

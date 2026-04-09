@@ -5,9 +5,10 @@ import {
   CreditCard,
   Clock,
   Hexagon,
+  LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
 const items = [
   { title: "Panel Principal", url: "/", icon: LayoutDashboard },
@@ -31,11 +33,11 @@ const items = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarContent className="pt-6">
+      <SidebarContent className="pt-6 flex flex-col h-full">
         <div className={`px-4 mb-8 ${collapsed ? "px-2" : ""}`}>
           <div className="flex items-center gap-3">
             <span className="text-2xl">🏇</span>
@@ -71,6 +73,21 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <div className="mt-auto p-4">
+          {!collapsed && user && (
+            <p className="text-xs text-muted-foreground truncate mb-2">{user.email}</p>
+          )}
+          <Button
+            variant="ghost"
+            size={collapsed ? "icon" : "sm"}
+            className="w-full justify-start text-muted-foreground"
+            onClick={signOut}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            {!collapsed && "Cerrar sesión"}
+          </Button>
+        </div>
       </SidebarContent>
     </Sidebar>
   );

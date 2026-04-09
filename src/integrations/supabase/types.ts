@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       bookings: {
         Row: {
+          center_id: string | null
           created_at: string
           date: string
           horse_id: string
@@ -26,6 +27,7 @@ export type Database = {
           time: string
         }
         Insert: {
+          center_id?: string | null
           created_at?: string
           date: string
           horse_id: string
@@ -36,6 +38,7 @@ export type Database = {
           time: string
         }
         Update: {
+          center_id?: string | null
           created_at?: string
           date?: string
           horse_id?: string
@@ -46,6 +49,13 @@ export type Database = {
           time?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_center_id_fkey"
+            columns: ["center_id"]
+            isOneToOne: false
+            referencedRelation: "centers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_horse_id_fkey"
             columns: ["horse_id"]
@@ -62,9 +72,31 @@ export type Database = {
           },
         ]
       }
+      centers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
       horses: {
         Row: {
           available: boolean
+          center_id: string | null
           created_at: string
           id: string
           image: string
@@ -73,6 +105,7 @@ export type Database = {
         }
         Insert: {
           available?: boolean
+          center_id?: string | null
           created_at?: string
           id?: string
           image?: string
@@ -81,16 +114,26 @@ export type Database = {
         }
         Update: {
           available?: boolean
+          center_id?: string | null
           created_at?: string
           id?: string
           image?: string
           level?: Database["public"]["Enums"]["horse_level"]
           name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "horses_center_id_fkey"
+            columns: ["center_id"]
+            isOneToOne: false
+            referencedRelation: "centers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       students: {
         Row: {
+          center_id: string | null
           created_at: string
           credits: number
           email: string | null
@@ -99,6 +142,7 @@ export type Database = {
           phone: string | null
         }
         Insert: {
+          center_id?: string | null
           created_at?: string
           credits?: number
           email?: string | null
@@ -107,6 +151,7 @@ export type Database = {
           phone?: string | null
         }
         Update: {
+          center_id?: string | null
           created_at?: string
           credits?: number
           email?: string | null
@@ -114,10 +159,19 @@ export type Database = {
           name?: string
           phone?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_center_id_fkey"
+            columns: ["center_id"]
+            isOneToOne: false
+            referencedRelation: "centers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       waitlist: {
         Row: {
+          center_id: string | null
           created_at: string
           date: string
           id: string
@@ -126,6 +180,7 @@ export type Database = {
           time: string
         }
         Insert: {
+          center_id?: string | null
           created_at?: string
           date: string
           id?: string
@@ -134,6 +189,7 @@ export type Database = {
           time: string
         }
         Update: {
+          center_id?: string | null
           created_at?: string
           date?: string
           id?: string
@@ -142,6 +198,13 @@ export type Database = {
           time?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "waitlist_center_id_fkey"
+            columns: ["center_id"]
+            isOneToOne: false
+            referencedRelation: "centers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "waitlist_student_id_fkey"
             columns: ["student_id"]
@@ -156,7 +219,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_my_center_id: { Args: never; Returns: string }
     }
     Enums: {
       booking_status: "confirmada" | "pendiente" | "cancelada"

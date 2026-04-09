@@ -59,7 +59,7 @@ export default function Auth() {
         <div className="text-center">
           <span className="text-4xl">🏇</span>
           <h1 className="text-2xl font-display mt-3 text-foreground">
-            {isLogin ? "equio" : "Crea tu centro ecuestre"}
+            equio
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {isLogin

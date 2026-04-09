@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 export interface Student {
@@ -9,15 +10,19 @@ export interface Student {
   phone: string | null;
   credits: number;
   created_at: string;
+  center_id: string | null;
 }
 
 export function useStudents() {
+  const { centerId } = useAuth();
   return useQuery({
-    queryKey: ["students"],
+    queryKey: ["students", centerId],
+    enabled: !!centerId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("students")
         .select("*")
+        .eq("center_id", centerId!)
         .order("name");
       if (error) throw error;
       return data as Student[];
@@ -27,11 +32,12 @@ export function useStudents() {
 
 export function useCreateStudent() {
   const qc = useQueryClient();
+  const { centerId } = useAuth();
   return useMutation({
     mutationFn: async (student: { name: string; email?: string; phone?: string; credits?: number }) => {
       const { data, error } = await supabase
         .from("students")
-        .insert(student)
+        .insert({ ...student, center_id: centerId })
         .select()
         .single();
       if (error) throw error;
@@ -64,14 +70,13 @@ export function useAddCredits() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, amount }: { id: string; amount: number }) => {
-      // First get current credits
       const { data: student, error: fetchError } = await supabase
         .from("students")
         .select("credits")
         .eq("id", id)
         .single();
       if (fetchError) throw fetchError;
-      
+
       const { error } = await supabase
         .from("students")
         .update({ credits: (student.credits || 0) + amount })

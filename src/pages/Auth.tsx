@@ -58,7 +58,7 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <img src={equioLogo} alt="equio logo" width={64} height={64} />
+          <img src={equioLogo} alt="equio logo" width={72} height={72} className="mx-auto" />
           <h1 className="text-2xl font-display mt-3 text-foreground">
             equio
           </h1>

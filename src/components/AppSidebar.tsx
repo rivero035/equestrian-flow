@@ -45,9 +45,9 @@ export function AppSidebar() {
             {!collapsed && (
               <div>
                 <h1 className="font-display text-lg leading-tight text-foreground">
-                  Centro Ecuestre
+                  equio
                 </h1>
-                <p className="text-xs text-muted-foreground">Gestión inteligente</p>
+                <p className="text-xs text-muted-foreground">Gestión ecuestre</p>
               </div>
             )}
           </div>

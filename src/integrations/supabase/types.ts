@@ -76,18 +76,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          logo_url: string | null
           name: string
           owner_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          logo_url?: string | null
           name?: string
           owner_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          logo_url?: string | null
           name?: string
           owner_id?: string
         }
@@ -95,31 +98,34 @@ export type Database = {
       }
       horses: {
         Row: {
-          available: boolean
           center_id: string | null
           created_at: string
           id: string
           image: string
           level: Database["public"]["Enums"]["horse_level"]
+          max_daily_hours: number
           name: string
+          status: Database["public"]["Enums"]["horse_status"]
         }
         Insert: {
-          available?: boolean
           center_id?: string | null
           created_at?: string
           id?: string
           image?: string
           level?: Database["public"]["Enums"]["horse_level"]
+          max_daily_hours?: number
           name: string
+          status?: Database["public"]["Enums"]["horse_status"]
         }
         Update: {
-          available?: boolean
           center_id?: string | null
           created_at?: string
           id?: string
           image?: string
           level?: Database["public"]["Enums"]["horse_level"]
+          max_daily_hours?: number
           name?: string
+          status?: Database["public"]["Enums"]["horse_status"]
         }
         Relationships: [
           {
@@ -140,6 +146,8 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          status: Database["public"]["Enums"]["student_status"]
+          user_id: string | null
         }
         Insert: {
           center_id?: string | null
@@ -149,6 +157,8 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
+          status?: Database["public"]["Enums"]["student_status"]
+          user_id?: string | null
         }
         Update: {
           center_id?: string | null
@@ -158,6 +168,8 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          status?: Database["public"]["Enums"]["student_status"]
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -168,6 +180,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
       waitlist: {
         Row: {
@@ -220,10 +253,20 @@ export type Database = {
     }
     Functions: {
       get_my_center_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "manager" | "student"
       booking_status: "confirmada" | "pendiente" | "cancelada"
       horse_level: "principiante" | "intermedio" | "avanzado"
+      horse_status: "available" | "resting" | "injured"
+      student_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -351,8 +394,11 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["manager", "student"],
       booking_status: ["confirmada", "pendiente", "cancelada"],
       horse_level: ["principiante", "intermedio", "avanzado"],
+      horse_status: ["available", "resting", "injured"],
+      student_status: ["pending", "approved", "rejected"],
     },
   },
 } as const

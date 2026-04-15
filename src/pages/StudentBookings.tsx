@@ -1,0 +1,195 @@
+import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useHorses } from "@/hooks/use-horses";
+import { useBookingsByDate, useCreateBooking, useCancelBooking } from "@/hooks/use-bookings";
+import { timeSlots } from "@/data/constants";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon, Check, Loader2, X } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+export default function StudentBookings() {
+  const { studentRecord } = useAuth();
+  const [date, setDate] = useState<Date>(new Date());
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedHorse, setSelectedHorse] = useState<string | null>(null);
+
+  const dateStr = format(date, "yyyy-MM-dd");
+  const { data: horses = [], isLoading: lh } = useHorses();
+  const { data: bookings = [], isLoading: lb } = useBookingsByDate(dateStr);
+  const createBooking = useCreateBooking();
+  const cancelBooking = useCancelBooking();
+
+  const availableHorses = horses.filter((h) => h.status === "available");
+  const myBookings = bookings.filter((b) => b.student_id === studentRecord?.id);
+
+  const getHorseBookedHours = (horseId: string) =>
+    bookings.filter((b) => b.horse_id === horseId).length;
+
+  const isSlotTaken = (time: string, horseId: string) =>
+    bookings.some((b) => b.time === time && b.horse_id === horseId);
+
+  const handleBook = () => {
+    if (!selectedTime || !selectedHorse || !studentRecord) return;
+
+    if ((studentRecord.credits ?? 0) <= 0) {
+      toast.error("No tienes créditos disponibles");
+      return;
+    }
+
+    const horse = horses.find((h) => h.id === selectedHorse);
+    if (horse && getHorseBookedHours(horse.id) >= horse.max_daily_hours) {
+      toast.error(`${horse.name} ha alcanzado su límite diario de horas`);
+      return;
+    }
+
+    createBooking.mutate(
+      { student_id: studentRecord.id, horse_id: selectedHorse, date: dateStr, time: selectedTime },
+      {
+        onSuccess: () => {
+          setSelectedTime(null);
+          setSelectedHorse(null);
+        },
+      }
+    );
+  };
+
+  const handleCancel = (bookingId: string) => {
+    if (!studentRecord) return;
+    const bookingDate = new Date(dateStr);
+    const hoursUntil = (bookingDate.getTime() - Date.now()) / (1000 * 60 * 60);
+    cancelBooking.mutate({ id: bookingId, studentId: studentRecord.id, refundCredit: hoursUntil > 24 });
+  };
+
+  if (lh || lb) {
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-3xl text-foreground">Reservar clase</h1>
+        <p className="text-muted-foreground mt-1">
+          {studentRecord?.credits ?? 0} créditos disponibles
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Fecha</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full mt-2 justify-start">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(date, "PPP", { locale: es })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={date} onSelect={(d) => d && setDate(d)} locale={es} className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+            </CardContent>
+          </Card>
+
+          <Button
+            onClick={handleBook}
+            className="w-full"
+            size="lg"
+            disabled={!selectedTime || !selectedHorse || createBooking.isPending}
+          >
+            {createBooking.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+            Reservar
+          </Button>
+        </div>
+
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardContent className="p-4">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+                Horario disponible
+              </label>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th className="text-left text-xs text-muted-foreground py-2 px-2">Hora</th>
+                      {availableHorses.map((h) => (
+                        <th key={h.id} className="text-center text-xs text-muted-foreground py-2 px-2">
+                          {h.image} {h.name}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timeSlots.map((time) => (
+                      <tr key={time} className="border-t border-border">
+                        <td className="py-2 px-2 text-sm font-medium text-muted-foreground">{time}</td>
+                        {availableHorses.map((horse) => {
+                          const taken = isSlotTaken(time, horse.id);
+                          const atLimit = getHorseBookedHours(horse.id) >= horse.max_daily_hours;
+                          const selected = selectedTime === time && selectedHorse === horse.id;
+                          return (
+                            <td key={horse.id} className="py-2 px-2 text-center">
+                              {taken ? (
+                                <Badge variant="secondary" className="text-[10px]">Ocupado</Badge>
+                              ) : atLimit ? (
+                                <Badge variant="secondary" className="text-[10px]">Límite</Badge>
+                              ) : (
+                                <button
+                                  onClick={() => { setSelectedTime(time); setSelectedHorse(horse.id); }}
+                                  className={cn(
+                                    "w-full py-1.5 px-2 rounded-md text-xs transition-all border",
+                                    selected
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "border-border hover:border-primary/40 hover:bg-primary/5 text-foreground"
+                                  )}
+                                >
+                                  Libre
+                                </button>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {myBookings.length > 0 && (
+            <Card>
+              <CardContent className="p-4">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 block">
+                  Mis reservas del día
+                </label>
+                <div className="space-y-2">
+                  {myBookings.map((b) => (
+                    <div key={b.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-foreground">{b.time}</span>
+                        <span className="text-sm text-muted-foreground">· {b.horses?.name}</span>
+                      </div>
+                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleCancel(b.id)}>
+                        <X className="h-3 w-3 mr-1" />Cancelar
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

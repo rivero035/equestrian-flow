@@ -29,7 +29,7 @@ export default function Bookings() {
   const createBooking = useCreateBooking();
   const cancelBooking = useCancelBooking();
 
-  const availableHorses = horses.filter((h) => h.available);
+  const availableHorses = horses.filter((h) => h.status === "available");
 
   const isSlotTaken = (time: string, horseId: string) => {
     return bookings.some((b) => b.time === time && b.horse_id === horseId);

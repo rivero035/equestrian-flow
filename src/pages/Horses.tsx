@@ -13,6 +13,18 @@ import { Plus, Loader2, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import type { Horse } from "@/hooks/use-horses";
 
+const statusLabels: Record<Horse["status"], string> = {
+  available: "Activo",
+  resting: "Descanso",
+  injured: "Lesionado",
+};
+
+const statusColors: Record<Horse["status"], "default" | "secondary" | "destructive"> = {
+  available: "default",
+  resting: "secondary",
+  injured: "destructive",
+};
+
 export default function Horses() {
   const today = format(new Date(), "yyyy-MM-dd");
   const { data: horses = [], isLoading } = useHorses();
@@ -23,15 +35,15 @@ export default function Horses() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [editHorse, setEditHorse] = useState<Horse | null>(null);
-  const [form, setForm] = useState({ name: "", level: "principiante" as Horse["level"], image: "🐴" });
+  const [form, setForm] = useState({ name: "", level: "principiante" as Horse["level"], image: "🐴", max_daily_hours: 4 });
 
   const openCreate = () => {
-    setForm({ name: "", level: "principiante", image: "🐴" });
+    setForm({ name: "", level: "principiante", image: "🐴", max_daily_hours: 4 });
     setShowCreate(true);
   };
 
   const openEdit = (h: Horse) => {
-    setForm({ name: h.name, level: h.level, image: h.image });
+    setForm({ name: h.name, level: h.level, image: h.image, max_daily_hours: h.max_daily_hours });
     setEditHorse(h);
   };
 
@@ -42,7 +54,7 @@ export default function Horses() {
 
   const handleUpdate = () => {
     if (!editHorse || !form.name.trim()) return;
-    updateHorse.mutate({ id: editHorse.id, name: form.name, level: form.level, image: form.image }, {
+    updateHorse.mutate({ id: editHorse.id, name: form.name, level: form.level, image: form.image, max_daily_hours: form.max_daily_hours }, {
       onSuccess: () => setEditHorse(null),
     });
   };
@@ -64,7 +76,7 @@ export default function Horses() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {horses.map((horse) => {
           const horseBookings = bookings.filter((b) => b.horse_id === horse.id);
-          const usagePct = Math.round((horseBookings.length / timeSlots.length) * 100);
+          const usagePct = Math.round((horseBookings.length / horse.max_daily_hours) * 100);
 
           return (
             <Card key={horse.id} className="animate-fade-in">
@@ -81,39 +93,37 @@ export default function Horses() {
                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(horse)}>
                       <Pencil className="h-3 w-3" />
                     </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-destructive"
-                      onClick={() => deleteHorse.mutate(horse.id)}
-                    >
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteHorse.mutate(horse.id)}>
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 mb-3">
-                  <Badge variant={horse.available ? "default" : "secondary"}>
-                    {horse.available ? "Activo" : "Descanso"}
-                  </Badge>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-6"
-                    onClick={() => updateHorse.mutate({ id: horse.id, available: !horse.available })}
+                  <Badge variant={statusColors[horse.status]}>{statusLabels[horse.status]}</Badge>
+                  <Select
+                    value={horse.status}
+                    onValueChange={(v) => updateHorse.mutate({ id: horse.id, status: v as Horse["status"] })}
                   >
-                    {horse.available ? "Poner en descanso" : "Activar"}
-                  </Button>
+                    <SelectTrigger className="h-7 w-auto text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">Activo</SelectItem>
+                      <SelectItem value="resting">Descanso</SelectItem>
+                      <SelectItem value="injured">Lesionado</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {horse.available && (
+                {horse.status === "available" && (
                   <div className="space-y-3">
                     <div>
                       <div className="flex justify-between text-xs text-muted-foreground mb-1">
                         <span>Ocupación hoy</span>
-                        <span>{horseBookings.length}/{timeSlots.length} horas</span>
+                        <span>{horseBookings.length}/{horse.max_daily_hours}h máx</span>
                       </div>
-                      <Progress value={usagePct} className="h-1.5" />
+                      <Progress value={Math.min(usagePct, 100)} className="h-1.5" />
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {timeSlots.map((time) => {
@@ -140,7 +150,6 @@ export default function Horses() {
         })}
       </div>
 
-      {/* Create / Edit dialog */}
       <Dialog open={showCreate || !!editHorse} onOpenChange={() => { setShowCreate(false); setEditHorse(null); }}>
         <DialogContent>
           <DialogHeader>
@@ -161,6 +170,10 @@ export default function Horses() {
                   <SelectItem value="avanzado">Avanzado</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Máx. horas diarias</label>
+              <Input type="number" value={form.max_daily_hours} onChange={(e) => setForm({ ...form, max_daily_hours: parseInt(e.target.value) || 4 })} className="mt-1" min={1} max={12} />
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">Emoji</label>

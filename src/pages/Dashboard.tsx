@@ -51,7 +51,7 @@ export default function Dashboard() {
     );
   }
 
-  const availableHorses = horses.filter((h) => h.available);
+  const availableHorses = horses.filter((h) => h.status === "available");
   const totalSlots = timeSlots.length * availableHorses.length;
   const bookedSlots = bookings.length;
   const emptySlots = Math.max(0, totalSlots - bookedSlots);

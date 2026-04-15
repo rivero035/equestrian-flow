@@ -50,7 +50,7 @@ export default function Waitlist() {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
-  const availableHorses = horses.filter((h) => h.available);
+  const availableHorses = horses.filter((h) => h.status === "available");
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">

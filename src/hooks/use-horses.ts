@@ -7,7 +7,8 @@ export interface Horse {
   id: string;
   name: string;
   level: "principiante" | "intermedio" | "avanzado";
-  available: boolean;
+  status: "available" | "resting" | "injured";
+  max_daily_hours: number;
   image: string;
   created_at: string;
   center_id: string | null;
@@ -34,10 +35,16 @@ export function useCreateHorse() {
   const qc = useQueryClient();
   const { centerId } = useAuth();
   return useMutation({
-    mutationFn: async (horse: { name: string; level: Horse["level"]; image?: string }) => {
+    mutationFn: async (horse: { name: string; level: Horse["level"]; image?: string; max_daily_hours?: number }) => {
       const { data, error } = await supabase
         .from("horses")
-        .insert({ name: horse.name, level: horse.level, image: horse.image || "🐴", center_id: centerId })
+        .insert({
+          name: horse.name,
+          level: horse.level,
+          image: horse.image || "🐴",
+          max_daily_hours: horse.max_daily_hours ?? 4,
+          center_id: centerId,
+        })
         .select()
         .single();
       if (error) throw error;

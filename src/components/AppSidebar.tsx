@@ -6,6 +6,7 @@ import {
   Clock,
   Hexagon,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import equioLogo from "@/assets/equio-logo.png";
@@ -29,6 +30,7 @@ const items = [
   { title: "Alumnos", url: "/alumnos", icon: Users },
   { title: "Créditos", url: "/creditos", icon: CreditCard },
   { title: "Lista de Espera", url: "/espera", icon: Clock },
+  { title: "Ajustes", url: "/ajustes", icon: Settings },
 ];
 
 export function AppSidebar() {

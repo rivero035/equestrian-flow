@@ -46,6 +46,30 @@ export function useCreateBooking() {
       date: string;
       time: string;
     }) => {
+      // Check horse status and daily limit
+      const { data: horse } = await supabase
+        .from("horses")
+        .select("status, max_daily_hours, name")
+        .eq("id", booking.horse_id)
+        .single();
+
+      if (!horse || horse.status !== "available") {
+        throw new Error("Este caballo no está disponible");
+      }
+
+      // Count existing bookings for this horse on this date
+      const { count } = await supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("horse_id", booking.horse_id)
+        .eq("date", booking.date)
+        .neq("status", "cancelada");
+
+      if ((count ?? 0) >= horse.max_daily_hours) {
+        throw new Error(`${horse.name} ha alcanzado su límite de ${horse.max_daily_hours}h diarias`);
+      }
+
+      // Check slot not taken
       const { data: existing } = await supabase
         .from("bookings")
         .select("id")
@@ -59,6 +83,7 @@ export function useCreateBooking() {
         throw new Error("Este caballo ya está reservado en ese horario");
       }
 
+      // Check student credits
       const { data: student } = await supabase
         .from("students")
         .select("credits")

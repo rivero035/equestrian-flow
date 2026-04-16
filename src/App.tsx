@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { AppLayout } from "@/components/AppLayout";
 import { StudentLayout } from "@/components/StudentLayout";
+import { EquioLoader } from "@/components/EquioLoader";
 import Dashboard from "./pages/Dashboard";
 import Bookings from "./pages/Bookings";
 import Horses from "./pages/Horses";
@@ -18,17 +19,16 @@ import Onboarding from "./pages/Onboarding";
 import StudentDashboard from "./pages/StudentDashboard";
 import StudentBookings from "./pages/StudentBookings";
 import NotFound from "./pages/NotFound";
-import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
 function AppRoutes() {
-  const { user, role, loading } = useAuth();
+  const { user, role, centerId, loading } = useAuth();
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <EquioLoader />
       </div>
     );
   }
@@ -42,8 +42,8 @@ function AppRoutes() {
     );
   }
 
-  // No role yet → onboarding
-  if (!role) {
+  // No role or no center yet → onboarding
+  if (!role || !centerId) {
     return (
       <Routes>
         <Route path="*" element={<Onboarding />} />

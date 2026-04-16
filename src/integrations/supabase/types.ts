@@ -252,6 +252,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      f_unaccent: { Args: { "": string }; Returns: string }
       get_my_center_id: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -260,6 +261,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       app_role: "manager" | "student"

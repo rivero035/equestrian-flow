@@ -80,13 +80,27 @@ export function useSearchCenters(query: string) {
     queryKey: ["centers-search", query],
     enabled: query.length >= 2,
     queryFn: async () => {
+      // Use RPC or filter client-side for accent-insensitive search
+      // Since we have unaccent extension, we use textSearch with ilike on normalized text
+      const normalizedQuery = query
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+
       const { data, error } = await supabase
         .from("centers")
         .select("id, name, logo_url")
-        .ilike("name", `%${query}%`)
-        .limit(10);
+        .limit(20);
       if (error) throw error;
-      return data;
+
+      // Client-side accent-insensitive filtering
+      return (data || []).filter((c) => {
+        const normalizedName = c.name
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase();
+        return normalizedName.includes(normalizedQuery);
+      }).slice(0, 10);
     },
   });
 }
